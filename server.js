@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const clientSessions = require('client-sessions');
 const mongoose = require('mongoose');
+const { connectToMongo, getMongoConnectionState } = require('./mongoHelper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,56 +13,9 @@ const PORT = process.env.PORT || 3000;
 // Import routers
 const bankingRouter = require('./routes/banking');
 
-// MongoDB Connection String - Replace with your actual MongoDB Atlas connection string
-// Note: Password with @ needs to be URL-encoded as %40
-let MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://webbankuser:Siddh@299@webbank.4rxwnhv.mongodb.net/?appName=webbank';
-
-// Always encode the @ in password for MongoDB connection string (required for URLs)
-if (MONGODB_URI.includes('Siddh@299')) {
-  // URL encode the @ in password for MongoDB connection string
-  MONGODB_URI = MONGODB_URI.replace('Siddh@299', 'Siddh%40299');
-  // Also ensure database name is included
-  if (!MONGODB_URI.includes('/webbank') && MONGODB_URI.includes('/?appName=')) {
-    MONGODB_URI = MONGODB_URI.replace('/?appName=', '/webbank?appName=');
-  }
-}
-
-// Track MongoDB connection state
-let isMongoConnected = false;
-
-// Connect to MongoDB
-if (MONGODB_URI && !MONGODB_URI.includes('username:password')) {
-  mongoose.connect(MONGODB_URI).then(() => {
-    isMongoConnected = true;
-    console.log('Connected to MongoDB successfully');
-  }).catch((err) => {
-    isMongoConnected = false;
-    console.log('MongoDB connection error:', err.message);
-    console.log('Falling back to local JSON files');
-  });
-  
-  // Handle connection events
-  mongoose.connection.on('connected', () => {
-    isMongoConnected = true;
-    console.log('MongoDB connected');
-  });
-  
-  mongoose.connection.on('error', (err) => {
-    isMongoConnected = false;
-    console.log('MongoDB connection error:', err.message);
-  });
-  
-  mongoose.connection.on('disconnected', () => {
-    isMongoConnected = false;
-    console.log('MongoDB disconnected');
-  });
-} else {
-  console.log('MongoDB URI not configured, using local JSON files');
-  isMongoConnected = false;
-}
-
-// Make connection state available to routes
-app.locals.isMongoConnected = () => isMongoConnected;
+// Initiate MongoDB connection (non-blocking)
+connectToMongo();
+app.locals.isMongoConnected = getMongoConnectionState;
 
 // Setup Handlebars
 app.engine('.hbs', exphbs.engine({ 

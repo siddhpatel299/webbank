@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const { Client, Account } = require('../dbConfig');
+const { connectToMongo, getMongoConnectionState } = require('../mongoHelper');
 
 // Middleware to check if user is logged in
 function isAuthenticated(req, res, next) {
@@ -15,14 +16,20 @@ function isAuthenticated(req, res, next) {
 
 // Helper function to check if MongoDB is connected
 function isMongoConnected() {
-  const mongoose = require('mongoose');
-  return mongoose.connection.readyState === 1; // 1 = connected
+  return getMongoConnectionState();
+}
+
+async function ensureMongoConnection() {
+  if (!isMongoConnected()) {
+    await connectToMongo();
+  }
+  return isMongoConnected();
 }
 
 // Helper function to get user accounts
 async function getUserAccounts(username) {
   // Check if MongoDB is connected first
-  if (isMongoConnected()) {
+  if (await ensureMongoConnection()) {
     try {
       // Try MongoDB first
       const client = await Client.findOne({ username: username });
@@ -41,8 +48,6 @@ async function getUserAccounts(username) {
     } catch (err) {
       console.log('MongoDB query error, using local data:', err.message);
     }
-  } else {
-    console.log('MongoDB not connected, using local data');
   }
   
   // Fallback to local JSON files
@@ -151,6 +156,8 @@ router.post('/deposit', isAuthenticated, async (req, res) => {
   try {
     const accountId = req.body.accountId;
     const amount = parseFloat(req.body.amount);
+    
+    await ensureMongoConnection();
     
     if (!accountId) {
       const accounts = await getUserAccounts(req.session.username);
@@ -277,6 +284,8 @@ router.post('/withdraw', isAuthenticated, async (req, res) => {
   try {
     const accountId = req.body.accountId;
     const amount = parseFloat(req.body.amount);
+    
+    await ensureMongoConnection();
     
     if (!accountId) {
       const accounts = await getUserAccounts(req.session.username);
