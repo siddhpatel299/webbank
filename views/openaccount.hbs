@@ -1,0 +1,76 @@
+<h2>Open a New Account</h2>
+
+{{#if error}}
+<div class="error">{{error}}</div>
+{{/if}}
+
+{{#if success}}
+<div class="success">{{success}}</div>
+{{/if}}
+
+<div class="info-box">
+    <p><strong>Account Limits:</strong> Each customer can have a maximum of one Chequing account and one Savings account.</p>
+    {{#if hasChequing}}
+    <p style="color: #f57c00; margin-top: 10px;">✓ You already have a Chequing account</p>
+    {{/if}}
+    {{#if hasSavings}}
+    <p style="color: #f57c00; margin-top: 10px;">✓ You already have a Savings account</p>
+    {{/if}}
+</div>
+
+{{#if canOpenChequing}}
+{{else}}
+    {{#if canOpenSavings}}
+    {{else}}
+    <div class="card">
+        <p>You have reached the maximum number of accounts. You already have both a Chequing and Savings account.</p>
+        <p style="margin-top: 10px;"><a href="/dashboard">Return to Dashboard</a></p>
+    </div>
+    {{/if}}
+{{/if}}
+
+{{#if canOpenChequing}}
+<form method="POST" action="/openaccount">
+    <div class="form-group">
+        <label for="accountType">Account Type:</label>
+        <select id="accountType" name="accountType" required>
+            <option value="">-- Select account type --</option>
+            {{#if canOpenChequing}}
+            <option value="Chequing">Chequing Account</option>
+            {{/if}}
+            {{#if canOpenSavings}}
+            <option value="Savings">Savings Account</option>
+            {{/if}}
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="initialDeposit">Initial Deposit (Optional):</label>
+        <input type="number" id="initialDeposit" name="initialDeposit" step="0.01" min="0" placeholder="0.00">
+    </div>
+    
+    <button type="submit">Open Account</button>
+</form>
+{{else}}
+    {{#if canOpenSavings}}
+    <form method="POST" action="/openaccount">
+        <div class="form-group">
+            <label for="accountType">Account Type:</label>
+            <select id="accountType" name="accountType" required>
+                <option value="">-- Select account type --</option>
+                {{#if canOpenSavings}}
+                <option value="Savings">Savings Account</option>
+                {{/if}}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="initialDeposit">Initial Deposit (Optional):</label>
+            <input type="number" id="initialDeposit" name="initialDeposit" step="0.01" min="0" placeholder="0.00">
+        </div>
+        
+        <button type="submit">Open Account</button>
+    </form>
+    {{/if}}
+{{/if}}
+

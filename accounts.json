@@ -1,0 +1,43 @@
+[
+  {
+    "id": "1000001",
+    "accountType": "Chequing",
+    "balance": 123.45
+  },
+  {
+    "id": "1000002",
+    "accountType": "Savings",
+    "balance": 0.00
+  },
+  {
+    "id": "1000011",
+    "accountType": "Chequing",
+    "balance": 0.00
+  },
+  {
+    "id": "1000022",
+    "accountType": "Savings",
+    "balance": 678.90
+  },
+  {
+    "id": "1000031",
+    "accountType": "Chequing",
+    "balance": 864.93
+  },
+  {
+    "id": "1000032",
+    "accountType": "Savings",
+    "balance": 783497.58
+  },
+  {
+    "id": "1000051",
+    "accountType": "Chequing",
+    "balance": 0.00
+  },
+  {
+    "id": "1000052",
+    "accountType": "Savings",
+    "balance": 5572.90
+  }
+]
+

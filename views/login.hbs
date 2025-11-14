@@ -1,0 +1,29 @@
+<h2>Login to Web Bank</h2>
+
+{{#if error}}
+<div class="error">{{error}}</div>
+{{/if}}
+
+<form method="POST" action="/login">
+    <div class="form-group">
+        <label for="username">Username (Email):</label>
+        <input type="email" id="username" name="username" required placeholder="Enter your email">
+    </div>
+    
+    <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required placeholder="Enter your password">
+    </div>
+    
+    <button type="submit">Login</button>
+</form>
+
+<div class="info-box" style="margin-top: 30px;">
+    <h3>Demo Credentials</h3>
+    <p><strong>Username:</strong> george.tsang@senecapolytechnic.ca<br>
+    <strong>Password:</strong> pass123</p>
+    <p style="margin-top: 10px;"><strong>Or try:</strong><br>
+    <strong>Username:</strong> mick@rollingstones.uk<br>
+    <strong>Password:</strong> stones</p>
+</div>
+

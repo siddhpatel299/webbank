@@ -1,0 +1,43 @@
+<h2>Check Account Balance</h2>
+
+{{#if error}}
+<div class="error">{{error}}</div>
+{{/if}}
+
+{{#if success}}
+<div class="success">{{success}}</div>
+{{/if}}
+
+{{#if accounts.length}}
+<form method="POST" action="/balance">
+    <div class="form-group">
+        <label for="accountId">Select Account:</label>
+        <select id="accountId" name="accountId" required>
+            <option value="">-- Select an account --</option>
+            {{#each accounts}}
+            <option value="{{this.id}}" {{#if (eq ../selectedAccount.id this.id)}}selected{{/if}}>
+                {{this.accountType}} - Account #{{this.id}}
+            </option>
+            {{/each}}
+        </select>
+    </div>
+    
+    <button type="submit">Check Balance</button>
+</form>
+
+{{#if balance}}
+<div class="card" style="margin-top: 30px;">
+    <h3>Account Balance</h3>
+    <p><strong>Account:</strong> {{selectedAccount.accountType}} #{{selectedAccount.id}}</p>
+    <p style="font-size: 24px; color: #667eea; margin-top: 15px;">
+        <strong>Balance: ${{balance}}</strong>
+    </p>
+</div>
+{{/if}}
+
+{{else}}
+<div class="info-box">
+    <p>You don't have any accounts yet. <a href="/openaccount">Open an account</a> to get started!</p>
+</div>
+{{/if}}
+

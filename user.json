@@ -1,0 +1,27 @@
+[
+  {
+    "username": "george.tsang@senecapolytechnic.ca",
+    "password": "pass123"
+  },
+  {
+    "username": "john@beatles.uk",
+    "password": "beatles"
+  },
+  {
+    "username": "paul@beatles.uk",
+    "password": "beatles"
+  },
+  {
+    "username": "george@beatles.uk",
+    "password": "beatles"
+  },
+  {
+    "username": "ringo@beatles.uk",
+    "password": "beatles"
+  },
+  {
+    "username": "mick@rollingstones.uk",
+    "password": "stones"
+  }
+]
+
