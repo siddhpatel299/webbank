@@ -13,25 +13,36 @@ function isAuthenticated(req, res, next) {
   }
 }
 
+// Helper function to check if MongoDB is connected
+function isMongoConnected() {
+  const mongoose = require('mongoose');
+  return mongoose.connection.readyState === 1; // 1 = connected
+}
+
 // Helper function to get user accounts
 async function getUserAccounts(username) {
-  try {
-    // Try MongoDB first
-    const client = await Client.findOne({ username: username });
-    if (client) {
-      let accounts = [];
-      if (client.chequing) {
-        const chqAccount = await Account.findOne({ id: client.chequing });
-        if (chqAccount) accounts.push(chqAccount);
+  // Check if MongoDB is connected first
+  if (isMongoConnected()) {
+    try {
+      // Try MongoDB first
+      const client = await Client.findOne({ username: username });
+      if (client) {
+        let accounts = [];
+        if (client.chequing) {
+          const chqAccount = await Account.findOne({ id: client.chequing });
+          if (chqAccount) accounts.push(chqAccount);
+        }
+        if (client.savings) {
+          const savAccount = await Account.findOne({ id: client.savings });
+          if (savAccount) accounts.push(savAccount);
+        }
+        return accounts;
       }
-      if (client.savings) {
-        const savAccount = await Account.findOne({ id: client.savings });
-        if (savAccount) accounts.push(savAccount);
-      }
-      return accounts;
+    } catch (err) {
+      console.log('MongoDB query error, using local data:', err.message);
     }
-  } catch (err) {
-    console.log('MongoDB error, using local data:', err.message);
+  } else {
+    console.log('MongoDB not connected, using local data');
   }
   
   // Fallback to local JSON files
@@ -161,23 +172,29 @@ router.post('/deposit', isAuthenticated, async (req, res) => {
       });
     }
     
-    // Try to update in MongoDB first
-    try {
-      const account = await Account.findOne({ id: accountId });
-      if (account) {
-        account.balance += amount;
-        await account.save();
-        
-        const accounts = await getUserAccounts(req.session.username);
-        return res.render('deposit', {
-          title: 'Deposit - Web Bank',
-          username: req.session.username,
-          accounts: accounts,
-          success: `Successfully deposited $${amount.toFixed(2)}. New balance: $${account.balance.toFixed(2)}`
-        });
+    // Try to update in MongoDB first (only if connected)
+    if (isMongoConnected()) {
+      try {
+        const account = await Account.findOne({ id: accountId });
+        if (account) {
+          account.balance += amount;
+          await account.save();
+          
+          const accounts = await getUserAccounts(req.session.username);
+          return res.render('deposit', {
+            title: 'Deposit - Web Bank',
+            username: req.session.username,
+            accounts: accounts,
+            success: `Successfully deposited $${amount.toFixed(2)}. New balance: $${account.balance.toFixed(2)}`
+          });
+        } else {
+          console.log('Account not found in MongoDB:', accountId);
+        }
+      } catch (mongoErr) {
+        console.error('MongoDB update failed:', mongoErr.message);
       }
-    } catch (mongoErr) {
-      console.log('MongoDB update failed:', mongoErr.message);
+    } else {
+      console.log('MongoDB not connected, cannot process deposit');
     }
     
     // Fallback to local JSON update (only for local development)
@@ -207,11 +224,15 @@ router.post('/deposit', isAuthenticated, async (req, res) => {
     
     // If we get here, something went wrong
     const accounts = await getUserAccounts(req.session.username);
+    let errorMsg = 'Account not found or unable to process deposit.';
+    if (!isMongoConnected()) {
+      errorMsg += ' MongoDB is not connected. Please check your MONGODB_URI environment variable in Vercel.';
+    }
     res.render('deposit', {
       title: 'Deposit - Web Bank',
       username: req.session.username,
       accounts: accounts,
-      error: 'Account not found or unable to process deposit. Please ensure MongoDB is connected.'
+      error: errorMsg
     });
   } catch (err) {
     console.error('Deposit error:', err);
@@ -277,33 +298,39 @@ router.post('/withdraw', isAuthenticated, async (req, res) => {
       });
     }
     
-    // Try MongoDB first
-    try {
-      const account = await Account.findOne({ id: accountId });
-      if (account) {
-        if (account.balance < amount) {
+    // Try MongoDB first (only if connected)
+    if (isMongoConnected()) {
+      try {
+        const account = await Account.findOne({ id: accountId });
+        if (account) {
+          if (account.balance < amount) {
+            const accounts = await getUserAccounts(req.session.username);
+            return res.render('withdraw', {
+              title: 'Withdraw - Web Bank',
+              username: req.session.username,
+              accounts: accounts,
+              error: 'Insufficient funds'
+            });
+          }
+          
+          account.balance -= amount;
+          await account.save();
+          
           const accounts = await getUserAccounts(req.session.username);
           return res.render('withdraw', {
             title: 'Withdraw - Web Bank',
             username: req.session.username,
             accounts: accounts,
-            error: 'Insufficient funds'
+            success: `Successfully withdrew $${amount.toFixed(2)}. New balance: $${account.balance.toFixed(2)}`
           });
+        } else {
+          console.log('Account not found in MongoDB:', accountId);
         }
-        
-        account.balance -= amount;
-        await account.save();
-        
-        const accounts = await getUserAccounts(req.session.username);
-        return res.render('withdraw', {
-          title: 'Withdraw - Web Bank',
-          username: req.session.username,
-          accounts: accounts,
-          success: `Successfully withdrew $${amount.toFixed(2)}. New balance: $${account.balance.toFixed(2)}`
-        });
+      } catch (mongoErr) {
+        console.error('MongoDB update failed:', mongoErr.message);
       }
-    } catch (mongoErr) {
-      console.log('MongoDB update failed:', mongoErr.message);
+    } else {
+      console.log('MongoDB not connected, cannot process withdrawal');
     }
     
     // Fallback to local JSON (only for local development)
@@ -343,11 +370,15 @@ router.post('/withdraw', isAuthenticated, async (req, res) => {
     
     // If we get here, something went wrong
     const accounts = await getUserAccounts(req.session.username);
+    let errorMsg = 'Account not found or unable to process withdrawal.';
+    if (!isMongoConnected()) {
+      errorMsg += ' MongoDB is not connected. Please check your MONGODB_URI environment variable in Vercel.';
+    }
     res.render('withdraw', {
       title: 'Withdraw - Web Bank',
       username: req.session.username,
       accounts: accounts,
-      error: 'Account not found or unable to process withdrawal. Please ensure MongoDB is connected.'
+      error: errorMsg
     });
   } catch (err) {
     console.error('Withdrawal error:', err);

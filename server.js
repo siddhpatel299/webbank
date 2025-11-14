@@ -15,14 +15,42 @@ const bankingRouter = require('./routes/banking');
 // MongoDB Connection String - Replace with your actual MongoDB Atlas connection string
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/webbank?retryWrites=true&w=majority';
 
+// Track MongoDB connection state
+let isMongoConnected = false;
+
 // Connect to MongoDB
-mongoose.connect(MONGODB_URI).then(() => {
-  console.log('Connected to MongoDB successfully');
-}).catch((err) => {
-  console.log('MongoDB connection error:', err);
-  // If MongoDB is not available, we'll use local JSON files
-  console.log('Falling back to local JSON files');
-});
+if (MONGODB_URI && !MONGODB_URI.includes('username:password')) {
+  mongoose.connect(MONGODB_URI).then(() => {
+    isMongoConnected = true;
+    console.log('Connected to MongoDB successfully');
+  }).catch((err) => {
+    isMongoConnected = false;
+    console.log('MongoDB connection error:', err.message);
+    console.log('Falling back to local JSON files');
+  });
+  
+  // Handle connection events
+  mongoose.connection.on('connected', () => {
+    isMongoConnected = true;
+    console.log('MongoDB connected');
+  });
+  
+  mongoose.connection.on('error', (err) => {
+    isMongoConnected = false;
+    console.log('MongoDB connection error:', err.message);
+  });
+  
+  mongoose.connection.on('disconnected', () => {
+    isMongoConnected = false;
+    console.log('MongoDB disconnected');
+  });
+} else {
+  console.log('MongoDB URI not configured, using local JSON files');
+  isMongoConnected = false;
+}
+
+// Make connection state available to routes
+app.locals.isMongoConnected = () => isMongoConnected;
 
 // Setup Handlebars
 app.engine('.hbs', exphbs.engine({ 
