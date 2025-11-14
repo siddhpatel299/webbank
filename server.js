@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const exphbs = require('express-handlebars');
 const path = require('path');
@@ -15,10 +16,7 @@ const bankingRouter = require('./routes/banking');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/webbank?retryWrites=true&w=majority';
 
 // Connect to MongoDB
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
+mongoose.connect(MONGODB_URI).then(() => {
   console.log('Connected to MongoDB successfully');
 }).catch((err) => {
   console.log('MongoDB connection error:', err);
