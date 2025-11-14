@@ -1,0 +1,20 @@
+════════════════════════════════════════════════════════════════
+   CREATE .env FILE - COPY THIS CONTENT
+════════════════════════════════════════════════════════════════
+
+Create a file named ".env" in the project root with this content:
+
+MONGODB_URI=your_connection_string_here
+
+Example:
+MONGODB_URI=mongodb+srv://username:password@cluster0.abc123.mongodb.net/webbank?retryWrites=true&w=majority
+
+════════════════════════════════════════════════════════════════
+
+IMPORTANT:
+- Replace "your_connection_string_here" with your actual MongoDB connection string
+- Make sure the database name in the connection string is "webbank"
+- The .env file is already in .gitignore (won't be committed to GitHub)
+
+════════════════════════════════════════════════════════════════
+
