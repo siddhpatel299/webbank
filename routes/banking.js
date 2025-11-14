@@ -26,6 +26,20 @@ async function ensureMongoConnection() {
   return isMongoConnected();
 }
 
+// Helper to convert mongoose documents into plain objects (for Handlebars safety)
+function normalizeAccounts(accounts) {
+  return accounts.map(account => {
+    if (account && typeof account.toObject === 'function') {
+      const plain = account.toObject({ getters: true, virtuals: false });
+      if (!plain.id && account.id) {
+        plain.id = account.id;
+      }
+      return plain;
+    }
+    return account;
+  });
+}
+
 // Helper function to get user accounts
 async function getUserAccounts(username) {
   // Check if MongoDB is connected first
@@ -43,7 +57,7 @@ async function getUserAccounts(username) {
           const savAccount = await Account.findOne({ id: client.savings });
           if (savAccount) accounts.push(savAccount);
         }
-        return accounts;
+        return normalizeAccounts(accounts);
       }
     } catch (err) {
       console.log('MongoDB query error, using local data:', err.message);
@@ -65,7 +79,7 @@ async function getUserAccounts(username) {
       const savAcc = localAccounts.find(a => a.id === client.savings);
       if (savAcc) accounts.push(savAcc);
     }
-    return accounts;
+    return normalizeAccounts(accounts);
   }
   
   return [];
