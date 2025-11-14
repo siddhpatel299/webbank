@@ -141,17 +141,27 @@ router.post('/deposit', isAuthenticated, async (req, res) => {
     const accountId = req.body.accountId;
     const amount = parseFloat(req.body.amount);
     
+    if (!accountId) {
+      const accounts = await getUserAccounts(req.session.username);
+      return res.render('deposit', {
+        title: 'Deposit - Web Bank',
+        username: req.session.username,
+        accounts: accounts,
+        error: 'Please select an account'
+      });
+    }
+    
     if (isNaN(amount) || amount <= 0) {
       const accounts = await getUserAccounts(req.session.username);
       return res.render('deposit', {
         title: 'Deposit - Web Bank',
         username: req.session.username,
         accounts: accounts,
-        error: 'Please enter a valid amount'
+        error: 'Please enter a valid amount greater than 0'
       });
     }
     
-    // Try to update in MongoDB
+    // Try to update in MongoDB first
     try {
       const account = await Account.findOne({ id: accountId });
       if (account) {
@@ -167,42 +177,59 @@ router.post('/deposit', isAuthenticated, async (req, res) => {
         });
       }
     } catch (mongoErr) {
-      console.log('MongoDB update failed, using local storage');
+      console.log('MongoDB update failed:', mongoErr.message);
     }
     
-    // Fallback to local JSON update
-    const accountsPath = path.join(__dirname, '../accounts.json');
-    let localAccounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
-    const accountIndex = localAccounts.findIndex(a => a.id === accountId);
-    
-    if (accountIndex !== -1) {
-      localAccounts[accountIndex].balance += amount;
-      fs.writeFileSync(accountsPath, JSON.stringify(localAccounts, null, 2));
-      
-      const accounts = await getUserAccounts(req.session.username);
-      res.render('deposit', {
-        title: 'Deposit - Web Bank',
-        username: req.session.username,
-        accounts: accounts,
-        success: `Successfully deposited $${amount.toFixed(2)}. New balance: $${localAccounts[accountIndex].balance.toFixed(2)}`
-      });
-    } else {
-      const accounts = await getUserAccounts(req.session.username);
-      res.render('deposit', {
-        title: 'Deposit - Web Bank',
-        username: req.session.username,
-        accounts: accounts,
-        error: 'Account not found'
-      });
+    // Fallback to local JSON update (only for local development)
+    // Note: This won't work on Vercel (read-only filesystem)
+    if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
+      try {
+        const accountsPath = path.join(__dirname, '../accounts.json');
+        let localAccounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
+        const accountIndex = localAccounts.findIndex(a => a.id === accountId);
+        
+        if (accountIndex !== -1) {
+          localAccounts[accountIndex].balance += amount;
+          fs.writeFileSync(accountsPath, JSON.stringify(localAccounts, null, 2));
+          
+          const accounts = await getUserAccounts(req.session.username);
+          return res.render('deposit', {
+            title: 'Deposit - Web Bank',
+            username: req.session.username,
+            accounts: accounts,
+            success: `Successfully deposited $${amount.toFixed(2)}. New balance: $${localAccounts[accountIndex].balance.toFixed(2)}`
+          });
+        }
+      } catch (fileErr) {
+        console.log('File update failed:', fileErr.message);
+      }
     }
-  } catch (err) {
+    
+    // If we get here, something went wrong
     const accounts = await getUserAccounts(req.session.username);
     res.render('deposit', {
       title: 'Deposit - Web Bank',
       username: req.session.username,
       accounts: accounts,
-      error: 'Error processing deposit'
+      error: 'Account not found or unable to process deposit. Please ensure MongoDB is connected.'
     });
+  } catch (err) {
+    console.error('Deposit error:', err);
+    try {
+      const accounts = await getUserAccounts(req.session.username);
+      res.render('deposit', {
+        title: 'Deposit - Web Bank',
+        username: req.session.username,
+        accounts: accounts,
+        error: 'Error processing deposit: ' + err.message
+      });
+    } catch (renderErr) {
+      res.render('deposit', {
+        title: 'Deposit - Web Bank',
+        username: req.session.username,
+        error: 'Error processing deposit. Please try again.'
+      });
+    }
   }
 });
 
@@ -230,13 +257,23 @@ router.post('/withdraw', isAuthenticated, async (req, res) => {
     const accountId = req.body.accountId;
     const amount = parseFloat(req.body.amount);
     
+    if (!accountId) {
+      const accounts = await getUserAccounts(req.session.username);
+      return res.render('withdraw', {
+        title: 'Withdraw - Web Bank',
+        username: req.session.username,
+        accounts: accounts,
+        error: 'Please select an account'
+      });
+    }
+    
     if (isNaN(amount) || amount <= 0) {
       const accounts = await getUserAccounts(req.session.username);
       return res.render('withdraw', {
         title: 'Withdraw - Web Bank',
         username: req.session.username,
         accounts: accounts,
-        error: 'Please enter a valid amount'
+        error: 'Please enter a valid amount greater than 0'
       });
     }
     
@@ -266,52 +303,69 @@ router.post('/withdraw', isAuthenticated, async (req, res) => {
         });
       }
     } catch (mongoErr) {
-      console.log('MongoDB update failed, using local storage');
+      console.log('MongoDB update failed:', mongoErr.message);
     }
     
-    // Fallback to local JSON
-    const accountsPath = path.join(__dirname, '../accounts.json');
-    let localAccounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
-    const accountIndex = localAccounts.findIndex(a => a.id === accountId);
-    
-    if (accountIndex !== -1) {
-      if (localAccounts[accountIndex].balance < amount) {
-        const accounts = await getUserAccounts(req.session.username);
-        return res.render('withdraw', {
-          title: 'Withdraw - Web Bank',
-          username: req.session.username,
-          accounts: accounts,
-          error: 'Insufficient funds'
-        });
+    // Fallback to local JSON (only for local development)
+    // Note: This won't work on Vercel (read-only filesystem)
+    if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
+      try {
+        const accountsPath = path.join(__dirname, '../accounts.json');
+        let localAccounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
+        const accountIndex = localAccounts.findIndex(a => a.id === accountId);
+        
+        if (accountIndex !== -1) {
+          if (localAccounts[accountIndex].balance < amount) {
+            const accounts = await getUserAccounts(req.session.username);
+            return res.render('withdraw', {
+              title: 'Withdraw - Web Bank',
+              username: req.session.username,
+              accounts: accounts,
+              error: 'Insufficient funds'
+            });
+          }
+          
+          localAccounts[accountIndex].balance -= amount;
+          fs.writeFileSync(accountsPath, JSON.stringify(localAccounts, null, 2));
+          
+          const accounts = await getUserAccounts(req.session.username);
+          return res.render('withdraw', {
+            title: 'Withdraw - Web Bank',
+            username: req.session.username,
+            accounts: accounts,
+            success: `Successfully withdrew $${amount.toFixed(2)}. New balance: $${localAccounts[accountIndex].balance.toFixed(2)}`
+          });
+        }
+      } catch (fileErr) {
+        console.log('File update failed:', fileErr.message);
       }
-      
-      localAccounts[accountIndex].balance -= amount;
-      fs.writeFileSync(accountsPath, JSON.stringify(localAccounts, null, 2));
-      
-      const accounts = await getUserAccounts(req.session.username);
-      res.render('withdraw', {
-        title: 'Withdraw - Web Bank',
-        username: req.session.username,
-        accounts: accounts,
-        success: `Successfully withdrew $${amount.toFixed(2)}. New balance: $${localAccounts[accountIndex].balance.toFixed(2)}`
-      });
-    } else {
-      const accounts = await getUserAccounts(req.session.username);
-      res.render('withdraw', {
-        title: 'Withdraw - Web Bank',
-        username: req.session.username,
-        accounts: accounts,
-        error: 'Account not found'
-      });
     }
-  } catch (err) {
+    
+    // If we get here, something went wrong
     const accounts = await getUserAccounts(req.session.username);
     res.render('withdraw', {
       title: 'Withdraw - Web Bank',
       username: req.session.username,
       accounts: accounts,
-      error: 'Error processing withdrawal'
+      error: 'Account not found or unable to process withdrawal. Please ensure MongoDB is connected.'
     });
+  } catch (err) {
+    console.error('Withdrawal error:', err);
+    try {
+      const accounts = await getUserAccounts(req.session.username);
+      res.render('withdraw', {
+        title: 'Withdraw - Web Bank',
+        username: req.session.username,
+        accounts: accounts,
+        error: 'Error processing withdrawal: ' + err.message
+      });
+    } catch (renderErr) {
+      res.render('withdraw', {
+        title: 'Withdraw - Web Bank',
+        username: req.session.username,
+        error: 'Error processing withdrawal. Please try again.'
+      });
+    }
   }
 });
 
