@@ -2,7 +2,16 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const { Client, Account } = require('./dbConfig');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://webbankuser:Siddh%40299@webbank.4rxwnhv.mongodb.net/webbank?appName=webbank&retryWrites=true&w=majority';
+let MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://webbankuser:Siddh@299@webbank.4rxwnhv.mongodb.net/?appName=webbank';
+
+// Always encode the @ in password for MongoDB connection string (required for URLs)
+if (MONGODB_URI.includes('Siddh@299')) {
+  MONGODB_URI = MONGODB_URI.replace('Siddh@299', 'Siddh%40299');
+  // Ensure database name is included
+  if (!MONGODB_URI.includes('/webbank') && MONGODB_URI.includes('/?appName=')) {
+    MONGODB_URI = MONGODB_URI.replace('/?appName=', '/webbank?appName=');
+  }
+}
 
 async function verifyDatabase() {
   try {

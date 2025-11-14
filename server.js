@@ -13,7 +13,18 @@ const PORT = process.env.PORT || 3000;
 const bankingRouter = require('./routes/banking');
 
 // MongoDB Connection String - Replace with your actual MongoDB Atlas connection string
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://webbankuser:Siddh%40299@webbank.4rxwnhv.mongodb.net/webbank?appName=webbank&retryWrites=true&w=majority';
+// Note: Password with @ needs to be URL-encoded as %40
+let MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://webbankuser:Siddh@299@webbank.4rxwnhv.mongodb.net/?appName=webbank';
+
+// Always encode the @ in password for MongoDB connection string (required for URLs)
+if (MONGODB_URI.includes('Siddh@299')) {
+  // URL encode the @ in password for MongoDB connection string
+  MONGODB_URI = MONGODB_URI.replace('Siddh@299', 'Siddh%40299');
+  // Also ensure database name is included
+  if (!MONGODB_URI.includes('/webbank') && MONGODB_URI.includes('/?appName=')) {
+    MONGODB_URI = MONGODB_URI.replace('/?appName=', '/webbank?appName=');
+  }
+}
 
 // Track MongoDB connection state
 let isMongoConnected = false;
