@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 const bankingRouter = require('./routes/banking');
 
 // MongoDB Connection String - Replace with your actual MongoDB Atlas connection string
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/webbank?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://webbankuser:Siddh%40299@webbank.4rxwnhv.mongodb.net/webbank?appName=webbank&retryWrites=true&w=majority';
 
 // Track MongoDB connection state
 let isMongoConnected = false;
