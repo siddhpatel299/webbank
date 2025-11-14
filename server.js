@@ -28,11 +28,14 @@ mongoose.connect(MONGODB_URI).then(() => {
 app.engine('.hbs', exphbs.engine({ 
   extname: '.hbs',
   defaultLayout: 'main',
+  layoutsDir: path.join(__dirname, 'views/layouts'),
+  partialsDir: path.join(__dirname, 'views/partials'),
   helpers: {
     eq: function (a, b) { return a === b; }
   }
 }));
 app.set('view engine', '.hbs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
