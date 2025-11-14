@@ -49,6 +49,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Disable caching for dynamic pages to ensure current account data is shown
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 // Load user data from JSON file
 let users = [];
 try {
